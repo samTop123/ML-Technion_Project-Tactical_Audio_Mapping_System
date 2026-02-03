@@ -9,7 +9,7 @@ import io
 
 app = Flask(__name__)
 
-# on the same directory : curl -X POST -F "file=@gun-fire-346766.wav" http://127.0.0.1:5000/predict
+# on the same directory : curl -X POST -F "file=@gun-shot-350315.wav" http://127.0.0.1:5000/predict
 
 # --- 1. Define model architecture (must match training) ---
 input_shape = (431, 40)  # max_len, n_mfcc from your training
@@ -39,8 +39,10 @@ def preprocess_audio(audio_bytes):
     return padded.reshape(1, MAX_LEN, N_MFCC)
 
 # --- 5. Flask route for predictions ---
+last_predict = None
 @app.route("/predict", methods=["POST"])
 def predict():
+    global last_predict
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
 
@@ -50,10 +52,17 @@ def predict():
     class_index = int(np.argmax(predictions))
     confidence = float(predictions[0][class_index])
 
-    return jsonify({
+    last_predict = jsonify({
         "class": labels[class_index],
         "confidence": confidence
     })
+
+    return last_predict
+
+@app.route("/predict", methods=["GET"])
+def predict_get():
+    global last_predict
+    return last_predict if last_predict else jsonify({"error": "No prediction made yet"})
 
 # --- 6. Run server ---
 if __name__ == "__main__":
