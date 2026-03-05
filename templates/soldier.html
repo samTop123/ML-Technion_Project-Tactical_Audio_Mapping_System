@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>תמ"ק - עמדת חייל</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #eef2f3; }
+        .container { background: white; padding: 30px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .status { margin: 20px 0; font-size: 18px; font-weight: bold; color: #555; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; border: none; border-radius: 5px; background-color: #27ae60; color: white; }
+        button.recording { background-color: #c0392b; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/RecordRTC/5.6.2/RecordRTC.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>עמדת שידור - מזהה כוח: {{ username }}</h2>
+        <div class="status" id="statusText">המערכת ממתינה...</div>
+        <button id="recordBtn" onclick="toggleRecording()">התחל שידור חי למפקד</button>
+        <br><br><a href="/logout">התנתק</a>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let mediaRecorder;
+        const RECORD_DURATION = 4000; // 4 שניות
+
+        async function startAudioCapture() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+                // פונקציה רקורסיבית שמקליטה, עוצרת, שולחת ומתחילה שוב
+                function recordAndSend() {
+                    if (!isRecording) return;
+            
+                    // שימוש ב-RecordRTC כדי ליצור WAV אמיתי
+                    mediaRecorder = new RecordRTC(stream, {
+                        type: 'audio',
+                        mimeType: 'audio/wav',
+                        recorderType: RecordRTC.StereoAudioRecorder, // מכריח יצירת WAV תקני
+                        desiredSampRate: 22050 // חוסך עבודה לשרת
+                    });
+            
+                    mediaRecorder.startRecording();
+            
+                    // מחכה 4 שניות ואז שולח
+                    setTimeout(() => {
+                        if (!isRecording) {
+                            mediaRecorder.stopRecording();
+                            return;
+                        }
+                
+                        mediaRecorder.stopRecording(() => {
+                            let blob = mediaRecorder.getBlob();
+                            sendAudioToServer(blob);
+                    
+                            // מתחיל את הסבב הבא מיד
+                            recordAndSend();
+                        });
+                    }, RECORD_DURATION);
+                }
+        
+                recordAndSend();
+
+            } catch (err) {
+                alert("שגיאה בגישה למיקרופון: " + err);
+                toggleRecording();
+            }
+        }
+
+        function toggleRecording() {
+            const btn = document.getElementById("recordBtn");
+            const statusText = document.getElementById("statusText");
+
+            if (!isRecording) {
+                isRecording = true;
+                btn.textContent = "עצור שידור";
+                btn.classList.add("recording");
+                statusText.textContent = "משדר סאונד טקטי למוקד...";
+                statusText.style.color = "red";
+                startAudioCapture();
+            } else {
+                isRecording = false;
+                btn.textContent = "התחל שידור חי למפקד";
+                btn.classList.remove("recording");
+                statusText.textContent = "המערכת ממתינה...";
+                statusText.style.color = "#555";
+                if (mediaRecorder) {
+                    mediaRecorder.stopRecording();
+                }
+            }
+        }
+
+        function sendAudioToServer(blob) {
+            const formData = new FormData();
+            formData.append("file", blob, "live_audio.wav");
+            formData.append("username", "{{ username }}");
+
+            fetch("/predict", {
+                method: "POST",
+                body: formData
+            }).then(response => response.json())
+            .then(data => console.log("סטטוס מהשרת:", data))
+            .catch(error => console.error("שגיאה בשליחה:", error));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>תמ"ק - עמדת מפקד</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #2c3e50; color: white; padding: 20px; }
+        h1 { text-align: center; color: #ecf0f1; }
+        .dashboard { width: 80%; margin: 0 auto; background: #34495e; padding: 20px; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; text-align: center; border-bottom: 1px solid #7f8c8d; font-size: 18px; }
+        th { background-color: #1abc9c; color: white; }
+        /* צבעים דינמיים לפי רמת איום */
+        .threat-high { background-color: #e74c3c; color: white; font-weight: bold; animation: blink 1s infinite; }
+        .threat-low { background-color: #2ecc71; color: white; }
+        .threat-neutral { background-color: #f1c40f; color: black; }
+        
+        @keyframes blink { 50% { opacity: 0.8; } }
+    </style>
+</head>
+<body>
+    <h1>מערכת תמ"ק - תמונת מצב חיה</h1>
+    <div class="dashboard">
+        <div style="text-align: left;"><a href="/logout" style="color: #ecf0f1;">התנתק מהמערכת</a></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>מזהה כוח (חייל)</th>
+                    <th>סיווג אקוסטי אחרון</th>
+                    <th>רמת ביטחון (AI)</th>
+                    <th>זמן עדכון אחרון</th>
+                </tr>
+            </thead>
+            <tbody id="statusTableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        function updateDashboard() {
+            fetch("/api/field_status")
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById("statusTableBody");
+                    tbody.innerHTML = ""; // ניקוי הטבלה הישנה
+
+                    // מעבר על כל החיילים שמשדרים
+                    for (const [soldier, info] of Object.entries(data)) {
+                        const tr = document.createElement("tr");
+                        
+                        // קביעת צבע הרקע לפי הסיווג (יש להתאים את שמות המחלקות לאלו שהמודל שלך מוציא)
+                        let threatClass = "threat-neutral";
+                        let statusLower = info.status.toLowerCase();
+                        if (statusLower.includes("gun") || statusLower.includes("fire") || statusLower.includes("explosion")) {
+                            threatClass = "threat-high"; // איום גבוה - אדום מהבהב
+                        } else if (statusLower.includes("speech") || statusLower.includes("background")) {
+                            threatClass = "threat-low"; // שגרה - ירוק
+                        }
+
+                        tr.innerHTML = `
+                            <td>${soldier}</td>
+                            <td class="${threatClass}">${info.status}</td>
+                            <td>${info.confidence}%</td>
+                            <td>${info.time}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                })
+                .catch(err => console.error("שגיאה בעדכון הנתונים:", err));
+        }
+
+        // בקשת נתונים מהשרת כל שנייה
+        setInterval(updateDashboard, 1000);
+        updateDashboard(); // קריאה ראשונה מידית
+    </script>
+</body>
+</html>
