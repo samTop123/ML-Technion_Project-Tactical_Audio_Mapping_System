@@ -22,7 +22,7 @@ live_field_status = {}
 
 # --- 1 & 2 & 3. Load Model and Labels (Keep your existing code) ---
 input_shape = (431, 40)
-model = tf.keras.models.load_model("coarse_model_saved_to_drive_version1.keras")
+model = tf.keras.models.load_model("model_train_clean_cnn.keras")
 print("Model loaded successfully.")
 
 with open("labels.txt", "r") as f:
