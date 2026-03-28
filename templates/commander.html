@@ -2,26 +2,67 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>תמ"ק - עמדת מפקד</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תמ"ק - עמדת מפקד / חמ"ל</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #2c3e50; color: white; padding: 20px; }
-        h1 { text-align: center; color: #ecf0f1; }
-        .dashboard { width: 80%; margin: 0 auto; background: #34495e; padding: 20px; border-radius: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 15px; text-align: center; border-bottom: 1px solid #7f8c8d; font-size: 18px; }
-        th { background-color: #1abc9c; color: white; }
-        /* צבעים דינמיים לפי רמת איום */
-        .threat-high { background-color: #e74c3c; color: white; font-weight: bold; animation: blink 1s infinite; }
-        .threat-low { background-color: #2ecc71; color: white; }
-        .threat-neutral { background-color: #f1c40f; color: black; }
+        body { 
+            font-family: 'Heebo', sans-serif; background-color: #111418; color: #ecf0f1; 
+            padding: 20px; margin: 0;
+        }
+        .header-container {
+            display: flex; justify-content: space-between; align-items: center; 
+            width: 90%; margin: 0 auto 20px auto;
+        }
+        h1 { margin: 0; color: #00d2d3; text-transform: uppercase; letter-spacing: 1.5px; }
+        .logout-btn {
+            background: #ff4757; color: white; padding: 8px 15px; text-decoration: none;
+            border-radius: 5px; font-weight: bold; font-size: 14px; transition: background 0.3s;
+        }
+        .logout-btn:hover { background: #ff6b81; }
         
-        @keyframes blink { 50% { opacity: 0.8; } }
+        .dashboard { 
+            width: 90%; margin: 0 auto; background: #1e272e; padding: 25px; 
+            border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 1px solid #2f3640;
+        }
+        table { 
+            width: 100%; border-collapse: collapse; margin-top: 10px; 
+            background: #2f3640; border-radius: 8px; overflow: hidden;
+        }
+        th, td { padding: 18px; text-align: center; border-bottom: 1px solid #353b48; font-size: 16px; }
+        th { background-color: #222f3e; color: #c8d6e5; text-transform: uppercase; letter-spacing: 1px; }
+        tr:hover { background-color: #353b48; }
+        
+        /* צבעים דינמיים לפי רמת איום */
+        .threat-indicator { padding: 8px 15px; border-radius: 20px; font-weight: bold; display: inline-block; }
+        
+        .threat-high .threat-indicator { 
+            background-color: rgba(255, 71, 87, 0.2); color: #ff4757; 
+            border: 1px solid #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.4);
+            animation: alert-blink 1s infinite; 
+        }
+        .threat-low .threat-indicator { 
+            background-color: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71;
+        }
+        .threat-neutral .threat-indicator { 
+            background-color: rgba(241, 196, 15, 0.2); color: #f1c40f; border: 1px solid #f1c40f;
+        }
+        
+        @keyframes alert-blink { 
+            0% { opacity: 1; transform: scale(1); } 
+            50% { opacity: 0.6; transform: scale(1.05); } 
+            100% { opacity: 1; transform: scale(1); } 
+        }
     </style>
 </head>
 <body>
-    <h1>מערכת תמ"ק - תמונת מצב חיה</h1>
+    <div class="header-container">
+        <h1>מערכת תמ"ק - חפ"ק מפקד</h1>
+        <a href="/logout" class="logout-btn">התנתק מהמערכת</a>
+    </div>
+    
     <div class="dashboard">
-        <div style="text-align: left;"><a href="/logout" style="color: #ecf0f1;">התנתק מהמערכת</a></div>
         <table>
             <thead>
                 <tr>
@@ -42,26 +83,26 @@
                 .then(response => response.json())
                 .then(data => {
                     const tbody = document.getElementById("statusTableBody");
-                    tbody.innerHTML = ""; // ניקוי הטבלה הישנה
+                    tbody.innerHTML = ""; 
 
-                    // מעבר על כל החיילים שמשדרים
                     for (const [soldier, info] of Object.entries(data)) {
                         const tr = document.createElement("tr");
                         
-                        // קביעת צבע הרקע לפי הסיווג (יש להתאים את שמות המחלקות לאלו שהמודל שלך מוציא)
                         let threatClass = "threat-neutral";
                         let statusLower = info.status.toLowerCase();
                         if (statusLower.includes("gun") || statusLower.includes("fire") || statusLower.includes("explosion")) {
-                            threatClass = "threat-high"; // איום גבוה - אדום מהבהב
+                            threatClass = "threat-high"; 
                         } else if (statusLower.includes("speech") || statusLower.includes("background")) {
-                            threatClass = "threat-low"; // שגרה - ירוק
+                            threatClass = "threat-low"; 
                         }
 
+                        tr.classList.add(threatClass);
+                        
                         tr.innerHTML = `
-                            <td>${soldier}</td>
-                            <td class="${threatClass}">${info.status}</td>
+                            <td style="font-weight: bold; color: #fff;">${soldier}</td>
+                            <td><span class="threat-indicator">${info.status}</span></td>
                             <td>${info.confidence}%</td>
-                            <td>${info.time}</td>
+                            <td style="color: #a4b0be;">${info.time}</td>
                         `;
                         tbody.appendChild(tr);
                     }
@@ -69,9 +110,8 @@
                 .catch(err => console.error("שגיאה בעדכון הנתונים:", err));
         }
 
-        // בקשת נתונים מהשרת כל שנייה
         setInterval(updateDashboard, 1000);
-        updateDashboard(); // קריאה ראשונה מידית
+        updateDashboard(); 
     </script>
 </body>
 </html>
