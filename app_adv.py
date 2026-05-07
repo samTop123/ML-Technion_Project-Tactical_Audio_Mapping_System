@@ -49,6 +49,8 @@ with open("labels.txt", "r") as f:
 
 def preprocess_audio(audio_bytes):
     """Converts raw audio bytes into padded MFCC features for the model."""
+    # y: The raw audio time-series (amplitude values).
+    # sr: Sampling rate (number of samples per second).
     y, sr = librosa.load(io.BytesIO(audio_bytes), sr=22050)
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=N_MFCC).T
     
