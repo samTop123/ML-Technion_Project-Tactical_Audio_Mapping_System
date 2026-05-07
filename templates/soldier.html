@@ -57,17 +57,24 @@
     </div>
 
     <script>
+        // isRecording: Boolean flag to track if the live broadcast is active.
         let isRecording = false;
+        // mediaRecorder: The RecordRTC instance that manages the audio buffer and encoding.
         let mediaRecorder;
+        // RECORD_DURATION: Constant defining the length of each audio segment in milliseconds.
         const RECORD_DURATION = 4000; 
 
+        // startAudioCapture: Initializes the microphone stream and starts the recursive recording loop.
         async function startAudioCapture() {
             try {
+                // stream: The live audio stream captured from the user's hardware.
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
+
+                // recordAndSend: Internal recursive function to handle back-to-back recording cycles.
                 function recordAndSend() {
                     if (!isRecording) return;
-            
+
+                    // Initializing RecordRTC with specific audio settings for AI compatibility.
                     mediaRecorder = new RecordRTC(stream, {
                         type: 'audio',
                         mimeType: 'audio/wav',
@@ -76,7 +83,8 @@
                     });
             
                     mediaRecorder.startRecording();
-            
+
+                    // setTimeout: Triggers the end of the current recording slice after RECORD_DURATION.
                     setTimeout(() => {
                         if (!isRecording) {
                             mediaRecorder.stopRecording();
@@ -84,9 +92,11 @@
                         }
                 
                         mediaRecorder.stopRecording(() => {
+                            // blob: The binary large object containing the raw WAV audio data.
                             let blob = mediaRecorder.getBlob();
                             sendAudioToServer(blob);
-                    
+
+                            // Recursive call to start the next 4-second segment immediately.
                             recordAndSend();
                         });
                     }, RECORD_DURATION);
@@ -100,6 +110,7 @@
             }
         }
 
+        // toggleRecording: UI Controller function to switch between 'Waiting' and 'Transmitting' states.
         function toggleRecording() {
             const btn = document.getElementById("recordBtn");
             const statusText = document.getElementById("statusText");
@@ -107,7 +118,7 @@
             if (!isRecording) {
                 isRecording = true;
                 btn.textContent = "עצור שידור";
-                btn.classList.add("recording");
+                btn.classList.add("recording"); // Triggers the CSS pulse animation
                 statusText.innerHTML = "🔴 משדר סאונד טקטי למוקד...";
                 statusText.style.color = "#ff4757";
                 statusText.style.border = "1px solid #ff4757";
@@ -125,7 +136,9 @@
             }
         }
 
+        // sendAudioToServer: Handles the XHR/Fetch request to upload the audio file to the backend.
         function sendAudioToServer(blob) {
+            // formData: Packaging the audio blob and identifying the soldier.
             const formData = new FormData();
             formData.append("file", blob, "live_audio.wav");
             formData.append("username", "{{ username }}");
