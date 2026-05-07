@@ -78,26 +78,36 @@
     </div>
 
     <script>
+        // updateDashboard: Periodic function to fetch and render live data from the field.
         function updateDashboard() {
+            // Fetching the global status object from the backend API.
             fetch("/api/field_status")
                 .then(response => response.json())
                 .then(data => {
+                    // tbody: Reference to the table body where soldier data rows are injected.
                     const tbody = document.getElementById("statusTableBody");
                     tbody.innerHTML = ""; 
 
+                    // Object.entries(data): Iterates over each soldier (key) and their info (value).
                     for (const [soldier, info] of Object.entries(data)) {
+                        // tr: The table row element being constructed for the current soldier.
                         const tr = document.createElement("tr");
-                        
+
+                        // threatClass: Variable used to determine the visual severity level.
                         let threatClass = "threat-neutral";
+                        // statusLower: Normalizing the status string to ensure accurate keyword matching.
                         let statusLower = info.status.toLowerCase();
+                        // Logic to categorize threats based on AI classification results.
                         if (statusLower.includes("gun") || statusLower.includes("fire") || statusLower.includes("explosion")) {
                             threatClass = "threat-high"; 
                         } else if (statusLower.includes("speech") || statusLower.includes("background")) {
                             threatClass = "threat-low"; 
                         }
 
+                        // Applying the CSS class for visual feedback (e.g., blinking red for high threat).
                         tr.classList.add(threatClass);
-                        
+
+                        // Injecting dynamic data into the row's cells.
                         tr.innerHTML = `
                             <td style="font-weight: bold; color: #fff;">${soldier}</td>
                             <td><span class="threat-indicator">${info.status}</span></td>
@@ -110,7 +120,9 @@
                 .catch(err => console.error("שגיאה בעדכון הנתונים:", err));
         }
 
+        // setInterval: Native JS function to trigger the update every 1000ms (1 second).
         setInterval(updateDashboard, 1000);
+        // Initial call to populate data immediately upon page load.
         updateDashboard(); 
     </script>
 </body>
